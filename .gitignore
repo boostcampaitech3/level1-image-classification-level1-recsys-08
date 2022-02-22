@@ -1,0 +1,6 @@
+.DS_Store
+*.jpg
+*.jpeg
+*.png
+*.gz
+__pycache__/
