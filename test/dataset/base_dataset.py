@@ -51,7 +51,7 @@ class CustomAugmentation:
         return self.transform(image)
 
 
-class MaskBaseDataset(Dataset):
+class BaseDataset(Dataset):
     num_classes = 3 * 2 * 3
 
     class MaskLabels:
@@ -65,7 +65,7 @@ class MaskBaseDataset(Dataset):
 
         @classmethod
         def get_label(cls, value: str):
-            gender = getattr(MaskBaseDataset.GenderLabels, value.upper())
+            gender = getattr(BaseDataset.GenderLabels, value.upper())
             try:
                 return gender
             except Exception:
@@ -112,7 +112,7 @@ class MaskBaseDataset(Dataset):
         file_name, file_extension = os.path.splitext(file)
 
         # 파일의 확장자가 이미지인지 아닌지 여부를 반환합니다.
-        return (file_extension in MaskBaseDataset.img_extensions)
+        return (file_extension in BaseDataset.img_extensions)
 
     @staticmethod
     def encode_multi_class(age_label, gender_label, mask_label):
@@ -266,7 +266,7 @@ class MaskBaseDataset(Dataset):
         return train_set, val_set
 
 
-class MaskSplitByProfileDataset(MaskBaseDataset):
+class SplitByProfileDataset(BaseDataset):
 
     def __init__(self,
                  data_dir,
@@ -321,19 +321,3 @@ class MaskSplitByProfileDataset(MaskBaseDataset):
 
     def split_dataset(self) -> List[Subset]:
         return [Subset(self, indices) for phase, indices in self.indices.items()]
-
-
-class TestDataset(Dataset):
-    def __init__(self, data_path, transform):
-        self.data_path = data_path
-        self.transform = transform
-
-    def __getitem__(self, index):
-        image = Image.open(self.data_path[index])
-
-        if self.transform:
-            image = self.transform(image)
-        return image
-
-    def __len__(self):
-        return len(self.data_path)

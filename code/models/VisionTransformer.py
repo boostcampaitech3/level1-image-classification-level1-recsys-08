@@ -1,43 +1,9 @@
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import torchvision
-
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange, Reduce
-
-
-class BaseModel(nn.Module):
-    def __init__(self, num_classes):
-        super().__init__()
-
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=7, stride=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1)
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1)
-        self.dropout1 = nn.Dropout(0.25)
-        self.dropout2 = nn.Dropout(0.25)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(128, num_classes)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = self.dropout1(x)
-
-        x = self.conv3(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = self.dropout2(x)
-
-        x = self.avgpool(x)
-        x = x.view(-1, 128)
-        return self.fc(x)
 
 
 class VisionTransformer(nn.Module):
@@ -97,26 +63,26 @@ class VisionTransformer(nn.Module):
             self.linear = nn.Linear(embedded_dim, embedded_dim)
 
         def forward(self, x: torch.Tensor):
-            Q = self.query(x)
-            K = self.key(x)
-            V = self.value(x)
+            query = self.query(x)
+            key = self.key(x)
+            value = self.value(x)
 
             if self.verbose:
-                print(f'Size of Q: {Q.size()}')
-                print(f'Size of K: {K.size()}')
-                print(f'Size of V: {V.size()}')
+                print(f'Size of query: {query.size()}')
+                print(f'Size of key: {key.size()}')
+                print(f'Size of V: {value.size()}')
 
-            Q = rearrange(Q, 'b q (h d) -> b h q d', h=self.num_heads)
+            query = rearrange(query, 'b q (h d) -> b h q d', h=self.num_heads)
             # K는 Q와 multiplication 해야 하므로 transpose를 취한 형태로 바꿔준다.
-            K = rearrange(K, 'b k (h d) -> b h d k', h=self.num_heads)
-            V = rearrange(V, 'b v (h d) -> b h v d', h=self.num_heads)
+            key = rearrange(key, 'b k (h d) -> b h d k', h=self.num_heads)
+            value = rearrange(value, 'b v (h d) -> b h v d', h=self.num_heads)
 
             if self.verbose:
-                print(f'Size of Q: {Q.size()}')
-                print(f'Size of K: {K.size()}')
-                print(f'Size of V: {V.size()}')
+                print(f'Size of query: {query.size()}')
+                print(f'Size of key: {key.size()}')
+                print(f'Size of V: {value.size()}')
 
-            weight = torch.matmul(Q, K)
+            weight = torch.matmul(query, key)
             weight = weight * self.scaling
 
             if self.verbose:
@@ -128,7 +94,7 @@ class VisionTransformer(nn.Module):
             if self.verbose:
                 print(f'Size of Attention: {attention.size()}')
 
-            context = torch.matmul(attention, V)
+            context = torch.matmul(attention, value)
             context = rearrange(context, 'b h q d -> b q (h d)')
 
             if self.verbose:
@@ -229,24 +195,3 @@ class VisionTransformer(nn.Module):
         x = self.classification_head(x)
 
         return x
-
-    # def set_attribute(self, **kwargs):
-    #     [setattr(self, key, value) for key, value in kwargs.items()]
-
-
-class ResNet18(nn.Module):
-    def __init__(self, num_classes: int, in_features: int = 512):
-        super().__init__()
-
-        self.num_classes = num_classes
-        self.in_features = in_features
-
-        self.resnet18 = torchvision.models.resnet18(pretrained=True)
-        self.resnet18.fc = torch.nn.Linear(in_features=self.in_features, out_features=self.num_classes, bias=True)
-
-        torch.nn.init.kaiming_normal_(self.resnet18.fc.weight)
-        stdv = 1. / math.sqrt(self.resnet18.fc.weight.size(1))
-        self.resnet18.fc.bias.data.uniform_(-stdv, stdv)
-
-    def forward(self, x):
-        return self.resnet18(x)

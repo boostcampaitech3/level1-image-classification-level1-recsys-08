@@ -7,11 +7,11 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from dataset import TestDataset, MaskBaseDataset
+from ..dataset import TestDataset, MaskBaseDataset
 
 
 def load_model(saved_model, num_classes, device):
-    model_cls = getattr(import_module("model"), args.model)
+    model_cls = getattr(import_module("models"), args.model)
     model = model_cls(
         num_classes=num_classes
     )
@@ -70,14 +70,14 @@ def inference(data_dir, model_dir, output_dir, args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    # Data and model checkpoints directories
+    # Data and models checkpoints directories
     parser.add_argument('--batch_size', type=int, default=1000, help='input batch size for validing (default: 1000)')
-    parser.add_argument('--resize', type=tuple, default=(96, 128), help='resize size for image when you trained (default: (96, 128))')
-    parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
+    parser.add_argument('--resize', type=tuple, default=(128, 96), help='resize size for image when you trained (default: (96, 128))')
+    parser.add_argument('--models', type=str, default='BaseModel', help='models type (default: BaseModel)')
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_EVAL', '/opt/ml/input/data/eval'))
-    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './model/exp'))
+    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './models/BaseModel'))
     parser.add_argument('--output_dir', type=str, default=os.environ.get('SM_OUTPUT_DATA_DIR', './output'))
 
     args = parser.parse_args()
