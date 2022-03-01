@@ -71,13 +71,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Data and models checkpoints directories
-    parser.add_argument('--batch_size', type=int, default=1000, help='input batch size for validing (default: 1000)')
-    parser.add_argument('--resize', type=tuple, default=(128, 96), help='resize size for image when you trained (default: (96, 128))')
-    parser.add_argument('--models', type=str, default='BaseModel', help='models type (default: BaseModel)')
+    parser.add_argument('--batch_size', type=int, default=128,
+                        help='input batch size for validing (default: 128)')
+    parser.add_argument('--resize', type=tuple, default=(128, 96),
+                        help='resize size for image when you trained (default: (96, 128))')
+    parser.add_argument('--models', type=str, default='BaseModel',
+                        help='models type (default: BaseModel)')
 
     # Container environment
-    parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_EVAL', '/opt/ml/input/data/eval'))
-    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './models/BaseModel'))
+    parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_EVAL', '/opt/ml/data/eval'))
+    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './experiments/results'))
     parser.add_argument('--output_dir', type=str, default=os.environ.get('SM_OUTPUT_DATA_DIR', './output'))
 
     args = parser.parse_args()

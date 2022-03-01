@@ -13,16 +13,33 @@ from torch.utils.tensorboard import SummaryWriter
 
 from loss.loss import create_criterion
 from train.Trainer import Trainer
+from inference.Inferrer import Inferrer
 # utils
 from utils.util import *
+from utils.setConfig import *
 
-load_dotenv(verbose=True)
+
+def load_model(saved_model, num_classes, device):
+    model_cls = getattr(import_module(f"models.{args.model}"), args.model)
+    model = model_cls(
+        num_classes=num_classes
+    )
+
+    # tarpath = os.path.join(saved_model, 'best.tar.gz')
+    # tar = tarfile.open(tarpath, 'r:gz')
+    # tar.extractall(path=saved_model)
+
+    model_path = os.path.join(saved_model, 'best.pth')
+    model.load_state_dict(torch.load(model_path, map_location=device))
+
+    return model
 
 
-def train(train_data_dir, result_dir, args):
+def train(train_data_dir: str, result_dir:str, args):
     seed_everything(args.seed)
 
     result_dir = increment_path(os.path.join(result_dir, args.name))
+    args.result_dir = result_dir
 
     # -- settings
     use_cuda = torch.cuda.is_available()
@@ -71,7 +88,7 @@ def train(train_data_dir, result_dir, args):
     model = model_module(
         num_classes=num_classes,
         **args.model_parameter
-    ).to(device)
+    )
 
     model = torch.nn.DataParallel(model)
 
@@ -94,16 +111,45 @@ def train(train_data_dir, result_dir, args):
     trainer.train(dataset, val_dataset)
 
 
+def infer(test_data_dir: str, test_data_file: str, model_dir: str, output_dir: str, args):
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+
+    num_classes = args.num_classes  # 18
+    model = load_model(model_dir, num_classes, device)
+
+    test_dataset_module = getattr(import_module(f"dataset.{args.test_dataset}"), args.test_dataset)
+    test_dataset = test_dataset_module(
+        test_data_dir=test_data_dir,
+        test_data_file=test_data_file
+    )
+
+    # -- augmentation
+    transform_module = getattr(import_module(f"dataset.augmentation.{args.augmentation}"),
+                               'BaseAugmentation')  # default: BaseAugmentation
+    transform = transform_module(
+        resize=args.resize,
+        mean=test_dataset.mean,
+        std=test_dataset.std,
+    )
+    test_dataset.set_transform(transform)
+
+    test_loader = torch.utils.data.DataLoader(
+        test_dataset,
+        batch_size=args.test_batch_size,
+        num_workers=multiprocessing.cpu_count() // 2,
+        shuffle=False,
+        pin_memory=use_cuda,
+        drop_last=False,
+    )
+
+    inferrer = Inferrer(test_data_dir, test_data_file, model, output_dir, device, args)
+    inferrer.inference(test_loader)
+
+
 if __name__ == '__main__':
+    load_dotenv(verbose=True)
     parser = argparse.ArgumentParser()
-
-    # Data and models checkpoints directories
-
-    # project
-    parser.add_argument('--name', default='BaseModel',
-                        help='models save at {SM_MODEL_DIR}/{name}')
-    parser.add_argument('--seed', type=int, default=42,
-                        help='random seed (default: 42)')
 
     # data
     parser.add_argument('--train_dataset', type=str, default='BaseDataset',
@@ -112,6 +158,12 @@ if __name__ == '__main__':
                         default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/MaskClassification/data/train/images'))
     parser.add_argument('--train_data_csv', type=str, default=None,
                         help='set directory of ".csv" file of train dataset if it exists')
+    parser.add_argument('--test_dataset', type=str, default='TestDataset',
+                        help='test dataset type (default: TestDataset)')
+    parser.add_argument('--test_data_dir', type=str,
+                        default=os.environ.get('SM_CHANNEL_EVAL', '/opt/ml/MaskClassification/data/eval/images'))
+    parser.add_argument('--test_data_file', type=str, default='info.csv',
+                        help='set directory of ".csv" file of test dataset if it exists')
     parser.add_argument('--augmentation', type=str, default='BaseAugmentation',
                         help='data augmentation type (default: BaseAugmentation)')
     parser.add_argument("--resize", nargs="+", type=int, default=[128, 96],
@@ -141,6 +193,12 @@ if __name__ == '__main__':
     parser.add_argument('--val_ratio', type=float, default=0.2,
                         help='ratio for validaton (default: 0.2)')
 
+    # test
+    parser.add_argument('--test_batch_size', type=int, default=128,
+                        help='input batch size for inference (default: 128)')
+    parser.add_argument('--output_dir', type=str,
+                        default=os.environ.get('SM_OUTPUT_DATA_DIR', '/opt/ml/MaskClassification/output'))
+
     # model
     parser.add_argument('--model', type=str, default='BaseModel',
                         help='models type (default: BaseModel)')
@@ -150,6 +208,12 @@ if __name__ == '__main__':
     # Check config.ini file
     parser.add_argument('--config_file', type=str,
                         default=os.environ.get('SM_CONFIG_FILE', '/opt/ml/MaskClassification/code/config.ini'))
+
+    # project
+    parser.add_argument('--name', default='BaseModel',
+                        help='models save at {result_dir}/{name}')
+    parser.add_argument('--seed', type=int, default=42,
+                        help='random seed (default: 42)')
 
     args = parser.parse_args()
 
@@ -161,44 +225,63 @@ if __name__ == '__main__':
 
             if 'project' in config.sections():
                 # string
-                setattr(config_namespace, 'name', config.get('project', 'name'))
+                set_config_as_string(config_namespace, config, 'project', 'name')
 
                 # integer
-                setattr(config_namespace, 'seed', config.getint('project', 'seed'))
+                set_config_as_int(config_namespace, config, 'project', 'seed')
 
             if 'data' in config.sections():
                 # string
-                setattr(config_namespace, 'train_dataset', config.get('data', 'train_dataset'))
-                setattr(config_namespace, 'train_data_dir', config.get('data', 'train_data_dir'))
-                setattr(config_namespace, 'train_data_csv', config.get('data', 'train_data_csv'))
-                setattr(config_namespace, 'augmentation', config.get('data', 'augmentation'))
+                set_config_as_string(config_namespace, config, 'data', 'train_dataset')
+
+                set_config_as_string(config_namespace, config, 'data', 'train_data_dir')
+
+                set_config_as_string(config_namespace, config, 'data', 'train_data_file')
+
+                set_config_as_string(config_namespace, config, 'data', 'test_dataset')
+
+                set_config_as_string(config_namespace, config, 'data', 'test_data_dir')
+
+                set_config_as_string(config_namespace, config, 'data', 'test_data_file')
+
+                set_config_as_string(config_namespace, config, 'data', 'augmentation')
 
                 # integer
-                setattr(config_namespace, 'num_classes', config.getint('data', 'num_classes'))
+                set_config_as_int(config_namespace, config, 'data', 'num_classes')
+
+                # list
+                set_config_as_json(config_namespace, config, 'data', 'resize')
 
             if 'train' in config.sections():
                 # float
-                setattr(config_namespace, 'lr', config.getfloat('train', 'lr'))
+                set_config_as_float(config_namespace, config, 'train', 'lr')
 
                 # string
-                setattr(config_namespace, 'criterion', config.get('train', 'criterion'))
-                setattr(config_namespace, 'optimizer', config.get('train', 'optimizer'))
-                setattr(config_namespace, 'result_dir', config.get('train', 'result_dir'))
+                set_config_as_string(config_namespace, config, 'train', 'criterion')
+                set_config_as_string(config_namespace, config, 'train', 'optimizer')
+                set_config_as_string(config_namespace, config, 'train', 'result_dir')
 
                 # integer
-                setattr(config_namespace, 'epochs', config.getint('train', 'epochs'))
-                setattr(config_namespace, 'train_batch_size', config.getint('train', 'train_batch_size'))
+                set_config_as_int(config_namespace, config, 'train', 'epochs')
+                set_config_as_int(config_namespace, config, 'train', 'train_batch_size')
 
             if 'valid' in config.sections():
                 # integer
-                setattr(config_namespace, 'valid_batch_size', config.getint('valid', 'valid_batch_size'))
+                set_config_as_int(config_namespace, config, 'valid', 'valid_batch_size')
+
+            if 'test' in config.sections():
+                # string
+                set_config_as_string(config_namespace, config, 'test', 'output_dir')
+
+                # integer
+                set_config_as_int(config_namespace, config, 'test', 'test_bacth_size')
 
             if 'model' in config.sections():
                 # string
-                setattr(config_namespace, 'model', config.get('model', 'model'))
+                set_config_as_string(config_namespace, config, 'model', 'model')
 
                 # boolean
-                setattr(config_namespace, 'pre_trained', config.getboolean('model', 'pre_trained'))
+                set_config_as_bool(config_namespace, config, 'model', 'pre_trained')
 
                 model_parameter = dict()
                 for key, value in config.items('model'):
@@ -212,6 +295,15 @@ if __name__ == '__main__':
     print(args)
 
     train_data_dir = args.train_data_dir
+
+    test_data_dir = args.test_data_dir
+    test_data_file = args.test_data_file
+    output_dir = args.output_dir
     result_dir = args.result_dir
 
+    torch.cuda.empty_cache()
     train(train_data_dir, result_dir, args)
+
+    result_dir = args.result_dir
+    torch.cuda.empty_cache()
+    infer(test_data_dir, test_data_file, result_dir, output_dir, args)

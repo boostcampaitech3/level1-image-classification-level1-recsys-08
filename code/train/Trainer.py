@@ -14,7 +14,7 @@ class Trainer:
                  train_loader, valid_loader, device, logger, lr_scheduler=None):
 
         self.args = args
-        self.model = model.to(device)
+        self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
         self.train_loader = train_loader
@@ -25,18 +25,18 @@ class Trainer:
 
         self.validator = Validator(args, device)
 
+
     def train(self, dataset, val_dataset):
         print("Training Started!")
+        self.model.to(self.device)
         best_val_acc = 0
         best_val_loss = np.inf
         for epoch in range(self.args.epochs):
-            print(f"epoch: {epoch}")
             # train loop
             self.model.train()
             loss_value = 0
             matches = 0
             for idx, train_batch in enumerate(tqdm(self.train_loader)):
-                print(f"idx: {idx}")
                 inputs, labels = train_batch
                 inputs = inputs.to(self.device)
                 labels = labels.to(self.device)
