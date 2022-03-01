@@ -41,3 +41,14 @@ class EfficientModel(nn.Module):
     def forward(self, x):
         out = self.net(x)
         return out
+    
+class BindModel(nn.Module):
+    def __init(self, num_classes):
+        super(BindModel, self).__init__()
+        self.age_model = EfficientModel(3)
+        self.gender_model = EfficientModel(3)
+        self.mask_model = EfficientModel(3)
+    
+    def forward(self, x):
+        out = self.mask_model(x) * 6 + self.gender_model(x) * 3 + self.age_model(x)
+        return out

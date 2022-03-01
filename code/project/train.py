@@ -97,8 +97,9 @@ def train(data_dir, model_dir, args):
     dataset_module = getattr(import_module("dataset"), args.dataset)  # default: MaskBaseDataset
     dataset = dataset_module(
         data_dir=data_dir,
+        label_mode=2
     )
-    num_classes = dataset.num_classes  # 18
+    num_classes = 3
 
     # -- augmentation
     # transform_module = getattr(import_module("dataset"), args.augmentation)  # default: BaseAugmentation
@@ -109,7 +110,6 @@ def train(data_dir, model_dir, args):
     # -- data_loader
     train_set, val_set = dataset.split_dataset()
 
-    print(train_set)
     train_set.dataset.set_transform(TrainAugmentation())
     train_loader = DataLoader(
         train_set,
@@ -131,15 +131,15 @@ def train(data_dir, model_dir, args):
     )
 
     # -- model
-    model_module = getattr(import_module("model"), args.model)  # default: BaseModel
+    model_module = getattr(import_module("model"), args.model)
     model = model_module(
         num_classes=num_classes
     ).to(device)
     model = torch.nn.DataParallel(model)
 
     # -- loss & metric
-    criterion = create_criterion(args.criterion)  # default: cross_entropy
-    opt_module = getattr(import_module("torch.optim"), args.optimizer)  # default: SGD
+    criterion = create_criterion(args.criterion)
+    opt_module = getattr(import_module("torch.optim"), args.optimizer)
     optimizer = opt_module(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=args.lr
@@ -237,7 +237,7 @@ if __name__ == '__main__':
 
     # Data and model checkpoints directories
     parser.add_argument('--seed', type=int, default=42, help='random seed (default: 42)')
-    parser.add_argument('--epochs', type=int, default=10, help='number of epochs to train (default: 1)')
+    parser.add_argument('--epochs', type=int, default=10, help='number of epochs to train (default: 10)')
     parser.add_argument('--dataset', type=str, default='MaskBaseDataset',
                         help='dataset augmentation type (default: MaskBaseDataset)')
     parser.add_argument('--augmentation', type=str, default='BaseAugmentation',
@@ -251,12 +251,12 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.00006, help='learning rate (default: 0.00006)')
     parser.add_argument('--val_ratio', type=float, default=0.2, help='ratio for validaton (default: 0.2)')
     parser.add_argument('--criterion', type=str, default='label_smoothing',
-                        help='criterion type (default: label_smoothing)')
+                        help='criterion type')
     parser.add_argument('--lr_decay_step', type=int, default=20,
                         help='learning rate scheduler deacy step (default: 20)')
     parser.add_argument('--log_interval', type=int, default=20,
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
+    parser.add_argument('--name', default='age_model', help='model save at {SM_MODEL_DIR}/{name}')
 
     # Container environment
     parser.add_argument('--data_dir', type=str,

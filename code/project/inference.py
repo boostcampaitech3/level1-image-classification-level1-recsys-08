@@ -34,9 +34,12 @@ def inference(data_dir, model_dir, output_dir, args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    num_classes = MaskBaseDataset.num_classes  # 18
-    model = load_model(model_dir, num_classes, device).to(device)
-    model.eval()
+    mask_model = load_model(f'{model_dir}/mask_model', 3, device).to(device)
+    mask_model.eval()
+    gender_model = load_model(f'{model_dir}/gender_model', 2, device).to(device)
+    gender_model.eval()
+    age_model = load_model(f'{model_dir}/age_model', 3, device).to(device)
+    age_model.eval()
 
     img_root = os.path.join(data_dir, 'images')
     info_path = os.path.join(data_dir, 'info.csv')
@@ -58,8 +61,10 @@ def inference(data_dir, model_dir, output_dir, args):
     with torch.no_grad():
         for idx, images in enumerate(loader):
             images = images.to(device)
-            pred = model(images)
-            pred = pred.argmax(dim=-1)
+            mask_pred = mask_model(images)
+            gender_pred = gender_model(images)
+            age_pred = age_model(images)
+            pred = mask_pred.argmax(dim=-1) * 6 + gender_pred.argmax(dim=-1) * 3 + age_pred.argmax(dim=-1)
             preds.extend(pred.cpu().numpy())
 
     info['ans'] = preds
@@ -78,7 +83,7 @@ if __name__ == '__main__':
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_EVAL', '/opt/ml/input/data/eval'))
-    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './model/exp2'))
+    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './model'))
     parser.add_argument('--output_dir', type=str, default=os.environ.get('SM_OUTPUT_DATA_DIR', './output'))
 
     args = parser.parse_args()

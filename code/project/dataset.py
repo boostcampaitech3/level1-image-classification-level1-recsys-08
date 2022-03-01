@@ -55,7 +55,7 @@ class AgeLabels(int, Enum):
 
         if value < 30:
             return cls.YOUNG
-        elif value < 59: # age 분류조건 수정(58세 이하)
+        elif value < 60:
             return cls.MIDDLE
         else:
             return cls.OLD
@@ -78,10 +78,12 @@ class MaskBaseDataset(Dataset):
     mask_labels = []
     gender_labels = []
     age_labels = []
-
-    def __init__(self, data_dir, val_ratio=0.2):
+    
+    # out_class_mode : label로 나오는 클래스 종류 (0=mask, 1=gender, 2=age, 3=combine)
+    def __init__(self, data_dir, val_ratio=0.2, label_mode=3):
         self.data_dir = data_dir
         self.val_ratio = val_ratio
+        self.label_mode = label_mode
 
         self.transform = None
         self.setup()
@@ -121,9 +123,12 @@ class MaskBaseDataset(Dataset):
         gender_label = self.get_gender_label(index)
         age_label = self.get_age_label(index)
         multi_class_label = self.encode_multi_class(mask_label, gender_label, age_label)
-
+        
+        label_list = [mask_label, gender_label, age_label]
+        
+        
         image_transform = self.transform(image)
-        return image_transform, multi_class_label
+        return image_transform, label_list[self.label_mode]
 
     def __len__(self):
         return len(self.image_paths)
