@@ -2,12 +2,12 @@ import torch.nn as nn
 import torchvision.models as models
 
 
-class EfficientNet_B8(nn.Module):
-    def __init__(self, num_classes=3, pretrained=True):
+class EfficientNetB3(nn.Module):
+    def __init__(self, num_classes: int = 18, pretrained=True):
         super().__init__()
         self.pretrained = pretrained
-        self.model = models.efficientnet_b8(pretrained = self.pretrained)
-        self.in_features = self.model.classifier.out_features
+        self.model = models.efficientnet_b3(pretrained=self.pretrained)
+        self.in_features = self.model.classifier[1].out_features
         self.num_classes = num_classes
         self.layer = nn.Sequential(
             nn.ReLU(inplace=True),

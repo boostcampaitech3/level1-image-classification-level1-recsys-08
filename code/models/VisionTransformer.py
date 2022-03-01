@@ -142,11 +142,13 @@ class VisionTransformer(nn.Module):
 
             return x, attention
 
-    def __init__(self, num_classes: int, num_channel: int = 3, width: int = 96, height: int = 128,
+    def __init__(self, num_classes: int, width: int = 96, height: int = 128, num_channel: int = 3,
                  patch_size: int = 32, embedded_dim: int = 6 * 6 * 3,
                  num_encoder_layers: int = 3, num_heads: int = 4,
                  forward_dim: int = 4, dropout_ratio: float = 0.2, verbose: bool = False):
         super().__init__()
+
+        assert width % patch_size == 0 and height % patch_size == 0, "Width and height must be divisible by patch size."
 
         self.width = width
         self.height = height
