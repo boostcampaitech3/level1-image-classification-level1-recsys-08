@@ -8,13 +8,12 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset, Subset, random_split
-from torchvision.transforms import ToTensor, Normalize, Compose, CenterCrop, ColorJitter, RandomHorizontalFlip, RandomChoice, Grayscale, RandomPerspective
+from torchvision.transforms import ToTensor, Resize, Normalize, Compose, CenterCrop, ColorJitter, RandomHorizontalFlip, RandomChoice, Grayscale, RandomPerspective
 
 class TrainAugmentation:
     def __init__(self, **args):
         self.transform = Compose([
             RandomChoice([
-                CenterCrop((384, 384)),
                 ColorJitter(brightness=(0.2, 3)),
                 Grayscale(num_output_channels=3),
             ]),
