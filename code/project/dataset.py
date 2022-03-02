@@ -55,7 +55,7 @@ class AgeLabels(int, Enum):
 
         if value < 30:
             return cls.YOUNG
-        elif value < 60:
+        elif value < 59: # class 범위 재설정(60 -> 59)
             return cls.MIDDLE
         else:
             return cls.OLD
@@ -111,6 +111,8 @@ class MaskBaseDataset(Dataset):
                 self.mask_labels.append(mask_label)
                 self.gender_labels.append(gender_label)
                 self.age_labels.append(age_label)
+        label_list = [self.mask_labels, self.gender_labels, self.age_labels]
+        self.classes = np.array(label_list[self.label_mode])
 
     def set_transform(self, transform):
         self.transform = transform
