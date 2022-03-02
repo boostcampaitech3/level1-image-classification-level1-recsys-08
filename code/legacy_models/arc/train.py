@@ -7,11 +7,12 @@ import random
 import re
 from importlib import import_module
 from pathlib import Path
+from utils import *
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch.optim.lr_scheduler import StepLR # *
+from torch.optim.lr_scheduler import *
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -152,6 +153,7 @@ def train(data_dir, model_dir, args):
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
 
     best_val_acc = 0
+    best_val_score = 0
     best_val_loss = np.inf
     for epoch in range(args.epochs):
         # train loop
@@ -196,6 +198,8 @@ def train(data_dir, model_dir, args):
             model.eval()
             val_loss_items = []
             val_acc_items = []
+            val_predicts= torch.empty(0)
+            val_targets = torch.empty(0)
             figure = None
             for val_batch in val_loader:
                 inputs, labels = val_batch
@@ -204,7 +208,9 @@ def train(data_dir, model_dir, args):
 
                 outs = model(inputs)
                 preds = torch.argmax(outs, dim=-1)
-
+                val_predicts = torch.cat((val_predicts,preds.cpu()))
+                val_targets = torch.cat((val_targets,labels.cpu()))
+                
                 loss_item = criterion(outs, labels).item()
                 acc_item = (labels == preds).sum().item()
                 val_loss_items.append(loss_item)
@@ -225,12 +231,22 @@ def train(data_dir, model_dir, args):
                 torch.save(model.module.state_dict(), f"{save_dir}/best.pth")
                 best_val_acc = val_acc
             torch.save(model.module.state_dict(), f"{save_dir}/last.pth")
+            
+            # print f1 score
+            score = get_f1_score(val_targets, val_predicts, verbose=True)
+            val_score = score['total']
+            if val_score > best_val_score:
+                print(f"New best model for f1 score : {val_score:4.2}! saving the best model..")
+                torch.save(model.module.state_dict(), f"{save_dir}/best_score.pth")
+                best_val_score = val_score
+            torch.save(model.module.state_dict(), f"{save_dir}/last.pth")
             print(
                 f"[Val] acc : {val_acc:4.2%}, loss: {val_loss:4.2} || "
                 f"best acc : {best_val_acc:4.2%}, best loss: {best_val_loss:4.2}"
             )
             logger.add_scalar("Val/loss", val_loss, epoch)
             logger.add_scalar("Val/accuracy", val_acc, epoch)
+            logger.add_scalar("Val/f1_score", val_score, epoch)
             logger.add_figure("results", figure, epoch)
             print()
 
