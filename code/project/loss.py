@@ -42,7 +42,7 @@ class LabelSmoothingLoss(nn.Module):
 
 # https://gist.github.com/SuperShinyEyes/dcc68a08ff8b615442e3bc6a9b55a354
 class F1Loss(nn.Module):
-    def __init__(self, classes=3, epsilon=1e-7):
+    def __init__(self, classes=2, epsilon=1e-7):
         super().__init__()
         self.classes = classes
         self.epsilon = epsilon
@@ -66,9 +66,9 @@ class F1Loss(nn.Module):
         return 1 - f1.mean()
 
 class CEF1Loss(nn.Module):
-    def __init__(self, num_class=18, epsilon=1e-7):
+    def __init__(self, classes=3, epsilon=1e-7):
         super().__init__()
-        self.f1loss = F1Loss(num_class, epsilon)
+        self.f1loss = F1Loss(classes, epsilon)
 
     def forward(self, y_pred, y_true):
         ce_loss = F.cross_entropy(y_pred, y_true)
