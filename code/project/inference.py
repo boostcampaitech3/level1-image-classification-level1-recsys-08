@@ -34,11 +34,11 @@ def inference(data_dir, model_dir, output_dir, args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    mask_model = load_model(f'{model_dir}/mask_model', 3, device).to(device)
+    mask_model = load_model(f'{model_dir}/{args.mask_dir}', 3, device).to(device)
     mask_model.eval()
-    gender_model = load_model(f'{model_dir}/gender_model', 2, device).to(device)
+    gender_model = load_model(f'{model_dir}/{args.gender_dir}', 2, device).to(device)
     gender_model.eval()
-    age_model = load_model(f'{model_dir}/age_model', 3, device).to(device)
+    age_model = load_model(f'{model_dir}/{args.age_dir}', 3, device).to(device)
     age_model.eval()
 
     img_root = os.path.join(data_dir, 'images')
@@ -80,6 +80,9 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=64, help='input batch size for validing (default: 64)')
     # parser.add_argument('--resize', type=tuple, default=(96, 128), help='resize size for image when you trained (default: (96, 128))')
     parser.add_argument('--model', type=str, default='EfficientModel', help='model type (default: EfficientModel)')
+    parser.add_argument('--mask_dir', type=str, default='mask_model', help='mask model dir')
+    parser.add_argument('--gender_dir', type=str, default='gender_model', help='gender model dir')
+    parser.add_argument('--age_dir', type=str, default='age_model', help='age model dir')
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_EVAL', '/opt/ml/input/data/eval'))
