@@ -11,7 +11,7 @@ class TrainAugmentation:
             ]),
             Resize(resize, InterpolationMode.BILINEAR),
             RandomHorizontalFlip(p=0.2),
-            RandomPerspective(distortion_scale=0.2, p=0.75),
+            RandomPerspective(distortion_scale=0.2, p=0.2),
             ToTensor(),
             Normalize(mean=mean, std=std),
         ])

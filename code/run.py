@@ -169,6 +169,7 @@ if __name__ == '__main__':
                         help='test data augmentation type (default: BaseAugmentation)')
     parser.add_argument("--resize", nargs="+", type=int, default=[128, 96],
                         help='resize size for image when training')
+
     # train
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='learning rate (default: 1e-3)')

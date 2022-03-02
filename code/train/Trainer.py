@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from .Validator import Validator
+from sklearn.metrics import f1_score
 
 
 def get_lr(optimizer):
@@ -29,12 +30,15 @@ class Trainer:
         print("Training Started!")
         self.model.to(self.device)
         best_val_acc = 0
+        best_val_f1 = 0
         best_val_loss = np.inf
+
         for epoch in range(self.args.epochs):
             # train loop
             self.model.train()
             loss_value = 0
             matches = 0
+
             for idx, train_batch in enumerate(tqdm(self.train_loader)):
                 inputs, labels = train_batch
                 inputs = inputs.to(self.device)
@@ -67,23 +71,25 @@ class Trainer:
 
             self.lr_scheduler.step()
 
-            val_loss, val_acc, figure = self.validator.validate(model=self.model, criterion=self.criterion,
+            val_loss, val_acc, val_f1, figure = self.validator.validate(model=self.model, criterion=self.criterion,
                                                                 dataset=dataset, val_dataset=val_dataset,
                                                                 val_loader=self.valid_loader
                                                                 )
 
             best_val_loss = min(best_val_loss, val_loss)
+            best_val_acc = max(best_val_acc, val_acc)
 
-            if val_acc > best_val_acc:
-                print(f"New best models for val accuracy : {val_acc:4.2%}! saving the best models..")
+            if val_f1 > best_val_f1:
+                print(f"New best models for val f1 score : {val_f1:4.4}! saving the best models..")
                 torch.save(self.model.module.state_dict(), f"{self.args.result_dir}/best.pth")
-                best_val_acc = val_acc
+                best_val_f1 = val_f1
             torch.save(self.model.module.state_dict(), f"{self.args.result_dir}/last.pth")
             print(
-                f"[Val] acc : {val_acc:4.2%}, loss: {val_loss:4.2} || "
-                f"best acc : {best_val_acc:4.2%}, best loss: {best_val_loss:4.2}"
+                f"[Val] f1 score : {val_f1:4.4}, acc : {val_acc:4.2%}, loss: {val_loss:4.2} || "
+                f"best f1 score : {best_val_f1:4.4}, best_acc : {best_val_acc: 4.2%}, best loss: {best_val_loss:4.2}"
             )
             self.logger.add_scalar("Val/loss", val_loss, epoch)
             self.logger.add_scalar("Val/accuracy", val_acc, epoch)
+            self.logger.add_scalar("Val/f1_score", val_f1, epoch)
             self.logger.add_figure("results", figure, epoch)
             print()

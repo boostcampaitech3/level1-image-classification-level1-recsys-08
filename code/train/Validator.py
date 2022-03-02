@@ -2,6 +2,7 @@ import torch
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import f1_score
 
 
 def grid_image(np_images, gts, preds, dataset, n=16, shuffle=False):
@@ -47,6 +48,9 @@ class Validator:
             model.eval()
             val_loss_items = []
             val_acc_items = []
+            total_labels = []
+            total_preds = []
+
             figure = None
             for val_batch in val_loader:
                 inputs, labels = val_batch
@@ -56,8 +60,12 @@ class Validator:
                 outs = model(inputs)
                 preds = torch.argmax(outs, dim=-1)
 
+                total_labels.append(labels.cpu())
+                total_preds.append(preds.cpu())
+
                 loss_item = criterion(outs, labels).item()
                 acc_item = (labels == preds).sum().item()
+
                 val_loss_items.append(loss_item)
                 val_acc_items.append(acc_item)
 
@@ -72,4 +80,8 @@ class Validator:
             val_loss = np.sum(val_loss_items) / len(val_loader)
             val_acc = np.sum(val_acc_items) / len(val_dataset)
 
-        return val_loss, val_acc, figure
+            total_labels = np.concatenate(total_labels)
+            total_preds = np.concatenate(total_preds)
+            val_f1 = f1_score(total_labels, total_preds, average='macro')
+
+        return val_loss, val_acc, val_f1, figure

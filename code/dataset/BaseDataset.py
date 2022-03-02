@@ -2,6 +2,7 @@ import os
 import re
 
 import numpy as np
+import pandas as pd
 from PIL import Image
 from torch.utils.data import Dataset, random_split
 from torchvision import transforms
@@ -41,7 +42,7 @@ class BaseDataset(Dataset):
 
             if value < 30:
                 return cls.YOUNG
-            elif value < 60:
+            elif value < 59:
                 return cls.MIDDLE
             else:
                 return cls.OLD
@@ -96,9 +97,11 @@ class BaseDataset(Dataset):
                  val_ratio:float=0.2,
                  mean=(0.485, 0.456, 0.406),
                  std=(0.229, 0.224, 0.225),
-                 transform=None):
+                 transform=None,
+                 data_file=None):
 
         self.data_dir = data_dir
+        self.data_file = data_file
         self.mean = mean
         self.std = std
 
@@ -114,6 +117,7 @@ class BaseDataset(Dataset):
             self.set_transform(transform)
 
         self.val_ratio = val_ratio
+
         self.set_up()
 
     def set_up(self):
@@ -147,6 +151,14 @@ class BaseDataset(Dataset):
                 self.age_labels.append(age_label)
                 self.gender_labels.append(gender_label)
                 self.mask_labels.append(mask_label)
+
+    def set_up_with_file(self, data_file):
+        df = pd.read_csv(data_file)
+        self.image_paths = list(df['directory'] + df['file'])
+
+        self.age_labels = list(df['age'].apply(self.AgeLabels.get_label))
+        self.gender_labels = list(df['gender'])
+        self.mask_labels = list(df['masked'])
 
     def set_transform(self, transform):
         self.transform = transform
