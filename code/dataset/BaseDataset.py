@@ -93,11 +93,10 @@ class BaseDataset(Dataset):
     # 데이터 셋 모델 인스턴스를 초기에 생성할 때 실행해야 하는 메소드를 정의합니다.
 
     def __init__(self, data_dir,
-                 transform=None,
-                 val_ratio=0.2,
-                 mean=(0.548, 0.504, 0.479),
-                 std=(0.237, 0.247, 0.246),
-                 csv_existed=False):
+                 val_ratio:float=0.2,
+                 mean=(0.485, 0.456, 0.406),
+                 std=(0.229, 0.224, 0.225),
+                 transform=None):
 
         self.data_dir = data_dir
         self.mean = mean
@@ -116,7 +115,6 @@ class BaseDataset(Dataset):
 
         self.val_ratio = val_ratio
         self.set_up()
-        self.calc_statistics()
 
     def set_up(self):
         data_dir = self.data_dir
@@ -153,20 +151,6 @@ class BaseDataset(Dataset):
     def set_transform(self, transform):
         self.transform = transform
 
-    def calc_statistics(self):
-        has_statistics: object = self.mean is not None and self.std is not None
-        if has_statistics:
-            return
-        print("[Warning] Calculating statistics... It can take a long time depending on your CPU machine")
-        sums = []
-        squared = []
-        for image_path in self.image_paths[:3000]:
-            image = np.array(Image.open(image_path)).astype(np.int32)
-            sums.append(image.mean(axis=(0, 1)))
-            squared.append((image ** 2).mean(axis=(0, 1)))
-
-        self.mean = np.mean(sums, axis=0) / 255
-        self.std = (np.mean(squared, axis=0) - self.mean ** 2) ** 0.5 / 255
 
     # 필요한 데이터 label을 가져오는 데 필요한 메소드를 정의합니다.
 

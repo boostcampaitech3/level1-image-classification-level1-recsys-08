@@ -1,9 +1,15 @@
 import os
+import sys
 import random
 from collections import defaultdict
 from typing import List
 
 from torch.utils.data import Subset
+
+module_path = os.path.dirname(os.path.realpath(__file__))
+print(module_path)
+if module_path not in sys.path:
+    sys.path.append(module_path)
 
 from BaseDataset import BaseDataset
 
@@ -11,11 +17,9 @@ from BaseDataset import BaseDataset
 class SplitByProfileDataset(BaseDataset):
 
     def __init__(self, data_dir,
-                 mean=(0.548, 0.504, 0.479),
-                 std=(0.237, 0.247, 0.246),
                  val_ratio=0.2):
         self.indices = defaultdict(list)
-        super().__init__(data_dir, mean, std, val_ratio)
+        super().__init__(data_dir, val_ratio)
 
     @staticmethod
     def _split_profile(profiles, val_ratio):

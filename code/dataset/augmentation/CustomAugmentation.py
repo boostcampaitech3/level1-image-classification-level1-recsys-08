@@ -1,7 +1,6 @@
 import torch
 
-from PIL import Image
-from torchvision.transforms import Resize, ToTensor, Normalize, Compose, CenterCrop, ColorJitter
+from torchvision.transforms import InterpolationMode, Resize, ToTensor, Normalize, Compose, CenterCrop, ColorJitter
 
 
 class AddGaussianNoise(object):
@@ -20,7 +19,7 @@ class CustomAugmentation:
     def __init__(self, resize, mean, std, **args):
         self.transform = Compose([
             CenterCrop((320, 256)),
-            Resize(resize, Image.BILINEAR),
+            Resize(resize, InterpolationMode.BILINEAR),
             ColorJitter(0.1, 0.1, 0.1, 0.1),
             ToTensor(),
             Normalize(mean=mean, std=std),

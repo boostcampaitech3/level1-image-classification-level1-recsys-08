@@ -1,7 +1,6 @@
 import argparse
 import ast
 import configparser
-import json
 import multiprocessing
 import os
 from importlib import import_module
@@ -53,12 +52,12 @@ def train(train_data_dir: str, result_dir:str, args):
     num_classes = dataset.num_classes  # 18
 
     # -- augmentation
-    transform_module = getattr(import_module(f"dataset.augmentation.{args.augmentation}"),
-                               args.augmentation)  # default: BaseAugmentation
+    transform_module = getattr(import_module(f"dataset.augmentation.{args.train_augmentation}"),
+                               args.train_augmentation)  # default: BaseAugmentation
     transform = transform_module(
         resize=args.resize,
-        mean=dataset.mean,
-        std=dataset.std,
+        mean=(0.485, 0.456, 0.406),
+        std=(0.229, 0.224, 0.225),
     )
     dataset.set_transform(transform)
 
@@ -125,12 +124,12 @@ def infer(test_data_dir: str, test_data_file: str, model_dir: str, output_dir: s
     )
 
     # -- augmentation
-    transform_module = getattr(import_module(f"dataset.augmentation.{args.augmentation}"),
-                               'BaseAugmentation')  # default: BaseAugmentation
+    transform_module = getattr(import_module(f"dataset.augmentation.{args.test_augmentation}"),
+                               args.test_augmentation)  # default: BaseAugmentation
     transform = transform_module(
         resize=args.resize,
-        mean=test_dataset.mean,
-        std=test_dataset.std,
+        mean=(0.485, 0.456, 0.406),
+        std=(0.229, 0.224, 0.225),
     )
     test_dataset.set_transform(transform)
 
@@ -156,7 +155,7 @@ if __name__ == '__main__':
                         help='dataset type (default: BaseDataset)')
     parser.add_argument('--train_data_dir', type=str,
                         default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/MaskClassification/data/train/images'))
-    parser.add_argument('--train_data_csv', type=str, default=None,
+    parser.add_argument('--train_data_file', type=str, default=None,
                         help='set directory of ".csv" file of train dataset if it exists')
     parser.add_argument('--test_dataset', type=str, default='TestDataset',
                         help='test dataset type (default: TestDataset)')
@@ -164,11 +163,12 @@ if __name__ == '__main__':
                         default=os.environ.get('SM_CHANNEL_EVAL', '/opt/ml/MaskClassification/data/eval/images'))
     parser.add_argument('--test_data_file', type=str, default='info.csv',
                         help='set directory of ".csv" file of test dataset if it exists')
-    parser.add_argument('--augmentation', type=str, default='BaseAugmentation',
-                        help='data augmentation type (default: BaseAugmentation)')
+    parser.add_argument('--train_augmentation', type=str, default='BaseAugmentation',
+                        help='train data augmentation type (default: BaseAugmentation)')
+    parser.add_argument('--test_augmentation', type=str, default='BaseAugmentation',
+                        help='test data augmentation type (default: BaseAugmentation)')
     parser.add_argument("--resize", nargs="+", type=int, default=[128, 96],
                         help='resize size for image when training')
-
     # train
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='learning rate (default: 1e-3)')
@@ -233,23 +233,18 @@ if __name__ == '__main__':
             if 'data' in config.sections():
                 # string
                 set_config_as_string(config_namespace, config, 'data', 'train_dataset')
-
                 set_config_as_string(config_namespace, config, 'data', 'train_data_dir')
-
                 set_config_as_string(config_namespace, config, 'data', 'train_data_file')
-
                 set_config_as_string(config_namespace, config, 'data', 'test_dataset')
-
                 set_config_as_string(config_namespace, config, 'data', 'test_data_dir')
-
                 set_config_as_string(config_namespace, config, 'data', 'test_data_file')
-
-                set_config_as_string(config_namespace, config, 'data', 'augmentation')
+                set_config_as_string(config_namespace, config, 'data', 'train_augmentation')
+                set_config_as_string(config_namespace, config, 'data', 'test_augmentation')
 
                 # integer
                 set_config_as_int(config_namespace, config, 'data', 'num_classes')
 
-                # list
+                # json
                 set_config_as_json(config_namespace, config, 'data', 'resize')
 
             if 'train' in config.sections():

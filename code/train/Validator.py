@@ -66,7 +66,7 @@ class Validator:
                     inputs_np = dataset.denormalize_image(inputs_np, dataset.mean, dataset.std)
                     figure = grid_image(
                         inputs_np, labels, preds, dataset, n=16,
-                        shuffle=self.args.train_dataset != "SplitByProfileDataset"
+                        shuffle=True
                     )
 
             val_loss = np.sum(val_loss_items) / len(val_loader)

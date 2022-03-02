@@ -25,7 +25,6 @@ class Trainer:
 
         self.validator = Validator(args, device)
 
-
     def train(self, dataset, val_dataset):
         print("Training Started!")
         self.model.to(self.device)

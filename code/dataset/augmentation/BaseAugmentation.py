@@ -1,11 +1,10 @@
-from PIL import Image
-from torchvision.transforms import Resize, ToTensor, Normalize, Compose
+from torchvision.transforms import InterpolationMode, Resize, ToTensor, Normalize, Compose
 
 
 class BaseAugmentation:
-    def __init__(self, resize, mean, std, **args):
+    def __init__(self, resize, mean, std, **kwargs):
         self.transform = Compose([
-            Resize(resize, Image.BILINEAR),
+            Resize(resize, InterpolationMode.BILINEAR),
             ToTensor(),
             Normalize(mean=mean, std=std),
         ])
