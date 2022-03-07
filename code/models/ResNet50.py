@@ -10,7 +10,7 @@ class ResNet50(nn.Module):
         super().__init__()
 
         self.num_classes = num_classes
-        self.in_features = 512
+        self.in_features = 2048
 
         if 'in_features' in kwargs:
             self.in_features = kwargs.get('in_features')

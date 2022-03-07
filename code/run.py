@@ -6,7 +6,6 @@ import os
 from importlib import import_module
 
 from dotenv import load_dotenv
-from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -38,7 +37,6 @@ def train(train_data_dir: str, result_dir:str, args):
     seed_everything(args.seed)
 
     result_dir = increment_path(os.path.join(result_dir, args.name))
-    args.result_dir = result_dir
 
     # -- settings
     use_cuda = torch.cuda.is_available()
@@ -99,7 +97,13 @@ def train(train_data_dir: str, result_dir:str, args):
         lr=args.lr,
         weight_decay=5e-4
     )
-    lr_scheduler = StepLR(optimizer, args.lr_decay_step, gamma=0.5)
+
+    sch_module = getattr(import_module("torch.optim.lr_scheduler"), args.scheduler)  # default: SGD
+    lr_scheduler = sch_module(
+        optimizer,
+        **args.scheduler_parameter
+    )
+
 
     # -- logging
     logger = SummaryWriter(log_dir=result_dir)
@@ -169,6 +173,8 @@ if __name__ == '__main__':
                         help='test data augmentation type (default: BaseAugmentation)')
     parser.add_argument("--resize", nargs="+", type=int, default=[128, 96],
                         help='resize size for image when training')
+    parser.add_argument("--split_by_label", type=bool, default=False,
+                        help='make models with data splitted by label')
 
     # train
     parser.add_argument('--lr', type=float, default=1e-3,
@@ -181,8 +187,6 @@ if __name__ == '__main__':
                         help='number of epochs to train (default: 1)')
     parser.add_argument('--train_batch_size', type=int, default=64,
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--lr_decay_step', type=int, default=20,
-                        help='learning rate scheduler decay step (default: 20)')
     parser.add_argument('--log_interval', type=int, default=20,
                         help='how many batches to wait before logging training status')
     parser.add_argument('--result_dir', type=str,
@@ -206,15 +210,25 @@ if __name__ == '__main__':
     parser.add_argument('--model_parameter', type=json.loads, default=None,
                         help='set parameters of model network')
 
-    # Check config.ini file
-    parser.add_argument('--config_file', type=str,
-                        default=os.environ.get('SM_CONFIG_FILE', '/opt/ml/MaskClassification/code/config.ini'))
+    # scheduler
+    parser.add_argument('--scheduler_parameter', type=json.loads, default=None,
+                        help='set parameters of model network')
 
     # project
     parser.add_argument('--name', default='BaseModel',
                         help='models save at {result_dir}/{name}')
     parser.add_argument('--seed', type=int, default=42,
                         help='random seed (default: 42)')
+    parser.add_argument('--train', type=bool, default=True,
+                        help='include training')
+    parser.add_argument('--test', type=bool, default=True,
+                        help='include testing')
+
+    # Check config.ini file
+    parser.add_argument('--config_file', type=str,
+                        default=os.environ.get('SM_CONFIG_FILE', '/opt/ml/MaskClassification/code/config.ini'))
+
+
 
     args = parser.parse_args()
 
@@ -222,6 +236,7 @@ if __name__ == '__main__':
         config_namespace = argparse.Namespace()
         with open(args.config_file, 'r') as config_file:
             config = configparser.ConfigParser()
+            config.optionxform = str
             config.read(args.config_file)
 
             if 'project' in config.sections():
@@ -230,6 +245,10 @@ if __name__ == '__main__':
 
                 # integer
                 set_config_as_int(config_namespace, config, 'project', 'seed')
+
+                # boolean
+                set_config_as_bool(config_namespace, config, 'project', 'train')
+                set_config_as_bool(config_namespace, config, 'project', 'test')
 
             if 'data' in config.sections():
                 # string
@@ -247,6 +266,9 @@ if __name__ == '__main__':
 
                 # json
                 set_config_as_json(config_namespace, config, 'data', 'resize')
+
+                # boolean
+                set_config_as_bool(config_namespace, config, 'data', 'split_by_label')
 
             if 'train' in config.sections():
                 # float
@@ -286,6 +308,17 @@ if __name__ == '__main__':
                         model_parameter[key] = value
                 setattr(config_namespace, 'model_parameter', model_parameter)
 
+            if 'scheduler' in config.sections():
+                # string
+                set_config_as_string(config_namespace, config, 'scheduler', 'scheduler')
+
+                scheduler_parameter = dict()
+                for key, value in config.items('scheduler'):
+                    if key not in ['scheduler']:
+                        value = ast.literal_eval(value)
+                        scheduler_parameter[key] = value
+            setattr(config_namespace, 'scheduler_parameter', scheduler_parameter)
+
         args = parser.parse_args(namespace=config_namespace)
 
     print(args)
@@ -295,11 +328,16 @@ if __name__ == '__main__':
     test_data_dir = args.test_data_dir
     test_data_file = args.test_data_file
     output_dir = args.output_dir
-    result_dir = args.result_dir
+    args.result_dir = os.path.join(args.result_dir, args.name)
 
     torch.cuda.empty_cache()
-    train(train_data_dir, result_dir, args)
+    if args.train is True:
+        args.result_dir = increment_path(args.result_dir)
+        result_dir = args.result_dir
+        train(train_data_dir, result_dir, args)
 
-    result_dir = args.result_dir
+
     torch.cuda.empty_cache()
-    infer(test_data_dir, test_data_file, result_dir, output_dir, args)
+    if args.test is True:
+        result_dir = args.result_dir
+        infer(test_data_dir, test_data_file, result_dir, output_dir, args)

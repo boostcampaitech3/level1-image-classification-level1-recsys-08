@@ -2,7 +2,6 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from .Validator import Validator
-from sklearn.metrics import f1_score
 
 
 def get_lr(optimizer):

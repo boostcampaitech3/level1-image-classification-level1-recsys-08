@@ -14,7 +14,6 @@ class Inferrer:
         self.info = pd.read_csv(test_data_file)
         self.model.to(self.device)
 
-    @torch.no_grad()
     def inference(self, test_loader):
         use_cuda = torch.cuda.is_available()
         device = torch.device("cuda" if use_cuda else "cpu")

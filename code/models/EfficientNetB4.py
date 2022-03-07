@@ -11,9 +11,10 @@ class EfficientNetB4(nn.Module):
         self.num_classes = num_classes
         self.layer = nn.Sequential(
             nn.ReLU(inplace=True),
-            nn.Linear(self.in_features, 512),
-            nn.ReLU(inplace=True),
-            nn.Linear(512, self.num_classes),
+            # nn.Linear(self.in_features, 512),
+            # nn.ReLU(inplace=True),
+            # nn.Linear(512, self.num_classes),
+            nn.Linear(self.in_features, self.num_classes)
         )
 
     def forward(self, x):
