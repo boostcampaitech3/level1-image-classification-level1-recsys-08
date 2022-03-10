@@ -2,11 +2,11 @@ import torch.nn as nn
 import torchvision.models as models
 
 
-class EfficientNetB3(nn.Module):
+class EfficientNetB4T(nn.Module):
     def __init__(self, num_classes: int = 18, pretrained=True):
         super().__init__()
         self.pretrained = pretrained
-        self.model = models.efficientnet_b3(pretrained=self.pretrained)
+        self.model = models.efficientnet_b4(pretrained=self.pretrained)
         self.in_features = self.model.classifier[1].out_features
         self.num_classes = num_classes
         self.layer = nn.Sequential(
