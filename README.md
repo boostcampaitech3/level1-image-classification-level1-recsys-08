@@ -2,31 +2,31 @@
 
 ## 프로젝트 소개
 
-
+<br/>
 
 ### 프로젝트 개요
 - 촬영된 사람 얼굴 사진에 대해 마스크 착용여부, 성별, 나이대에 따라 18개의 클래스로 구분하여 예측하기 위한 모델을 만들어 결과를 추론한다.
 - f1 score로 모델 성능을 평가한다.
 
-
+<br/>
 
 ### 팀 목표
 
 - 모델을 제작할 때 사용되는 데이터의 특징이 무엇이고 어떠한 인사이트를 얻을 수 있는지를 EDA를 통해 해석한다. 
 - 팀원 개별적으로 대회에서 주어진 Label을 가장 잘 분류할 수 있는 최적의 모델을 찾고, 이를 바탕으로 다양한 Hyperparameter와 학습 기법을 적용하여 모델의 정확도와 F1 Score을 높이는 것을 목표로 한다.
 
-
+<br/>
 
 ### 예측 클래스 설명
 ![class](https://cdn.jsdelivr.net/gh/Glanceyes/ImageRepository/2022/03/11/1646962982022.png)
 
-
+<br/>
 
 ### 프로젝트 기간
 
 2022.02.21 ~ 2022.03.03(11일)
 
-
+<br/>
 
 ### 프로젝트 진행환경
 
@@ -35,7 +35,7 @@
 - DL framework: PyTorch
 - IDE: Jupyter notebook, PyCharm
 
-
+<br/>
 
 ### 프로젝트 요약
 
@@ -55,7 +55,7 @@
     - optimizer: Adam
     - scheduler: CosineAnnealingWarmRestarts
 
-
+<br/>
 
 ### 프로젝트 결과
 
@@ -63,7 +63,7 @@
 |:----:|:--------:|:--------:|
 |  16  |  0.7428  |  79.9683 | 
 
-
+<br/>
 
 ### 데이터 구조
 
@@ -93,13 +93,15 @@
     └─ train.csv
 ```
 
-
+<br/>
 
 ### Flow Chart
 
 ![mermaid-diagram-20220311110915](https://cdn.jsdelivr.net/gh/Glanceyes/ImageRepository/2022/03/11/1646964624584.png)
 
+<br/>
 
+<br/>
 
 ## 팀 소개
 
@@ -108,7 +110,9 @@
 |                              [ 김성규 ](https://github.com/hikible)                             |                              [ 이선호 ](https://github.com/Glanceyes)                             |                              [ 이현우 ](https://github.com/harrier999)                             |                              [ 전민규 ](https://github.com/alsrb0607)                             |                              [ 정준우 ](https://github.com/ler0n)                             |
 |                              EfficientNet, ResNet 모델 분석 및 ensemble 진행                             |                     ResNet, EfficientNet, ViT를 이용한 모델 분석 및 프로젝트 구조화                    |                               ResNet을 이용한 모델, ArcFace loss 분석                              |                                ResNet, DenseNet을 이용한 모델 분석                                |                    모델 ensemble, Label smoothing loss 커스텀                    |
 
+<br/>
 
+<br/>
 
 ## Repository 설명
 
@@ -150,7 +154,7 @@ code/
 └─ run.py
 ```
 
-
+<br/>
 
 ### Dependencies
 
@@ -168,7 +172,7 @@ code/
 - tqdm~=4.51.0 
 - timm==0.5.4 
 
-
+<br/>
 
 ### 실행 방법
 
