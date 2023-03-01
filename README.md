@@ -18,7 +18,7 @@
 <br/>
 
 ### 예측 클래스 설명
-![class](https://cdn.jsdelivr.net/gh/Glanceyes/ImageRepository/2022/03/11/1646962982022.png)
+![class](https://cdn.jsdelivr.net/gh/Glanceyes/ImageRepository/2023/03/01/20230301_1677657319.svg)
 
 <br/>
 
